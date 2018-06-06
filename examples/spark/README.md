@@ -48,7 +48,9 @@ tar -zxvf spark-2.3.0-bin-hadoop2.7.tgz
 2. Prepare hadoop configuration file
 
 
-1.1. [PAI Build Hadoop binary](https://github.com/Microsoft/pai/blob/yanjga/mmlspark/hadoop-ai/README.md) 
+1.1. PAI Build Hadoop binary
+
+[Reference](https://github.com/Microsoft/pai/blob/yanjga/mmlspark/hadoop-ai/README.md) 
 
 If you have finished this step after deploy PAI, you could skip this step.
 
@@ -98,7 +100,7 @@ If user want to submit Spark, PySpark or MMLSpark job. Please view the following
 
 You could prepare a python env with anaconda or use other python enviroment. The environment shoud install the depenecnies which will use by PySpark jobs
 
-2.1. Creat a env:
+2.1. Create a env:
 
 ```
 conda create -p /home/ubuntu/dev --copy -y -q python=3 pandas scikit-learn
