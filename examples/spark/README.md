@@ -28,9 +28,7 @@ The following contents show some basic Spark examples, other customized Spark co
 
 1. [Basic environment](#basic-environment)
 2. [Advanced environment](#advanced-environment)
-3. [Keras examples](#keras-examples)
-4. [Frequently asked questions](#faq)
-
+3. [Submit Spark Job to PAI examples](#Submit Spark Job to PAI examples)
 
 ## Basic environment
 
