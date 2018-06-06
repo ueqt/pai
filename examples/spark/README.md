@@ -28,7 +28,7 @@ The following contents show some basic Spark examples, other customized Spark co
 
 1. [Basic environment](#basic-environment)
 2. [Advanced environment](#advanced-environment)
-3. [Submit Spark Job to PAI examples](#Submit Spark Job to PAI examples)
+3. [Submit Spark Job to PAI examples](#submit-spark-job-to-pai-examples)
 
 ## Basic environment
 
@@ -47,15 +47,19 @@ tar -zxvf spark-2.3.0-bin-hadoop2.7.tgz
 
 2. Prepare hadoop configuration file
 
-After execute:
 
-1.1. PAI Build Hadoop binary
+1.1. [PAI Build Hadoop binary](https://github.com/Microsoft/pai/blob/yanjga/mmlspark/hadoop-ai/README.md) 
+
+If you have finished this step after deploy PAI, you could skip this step.
 
 1.2. pai/pai-management execute:
 
+[Reference](https://github.com/Microsoft/pai/blob/yanjga/mmlspark/pai-management/README.md)
 ```
 ./prepare_hadoop_configuration
 ```
+
+If you have finished this step after deploy PAI, you could skip this step.
 
 You could get hadoop config files at pai/pai-management/bootstrap/hadoop-service/hadoop-configuration
 
@@ -102,24 +106,40 @@ conda create -p /home/ubuntu/dev --copy -y -q python=3 pandas scikit-learn
 
 By using the --copy, we "Install all packages using copies instead of hard- or soft-linking." The headers in various files in the bin/ directory may have lines like #!/home/ubuntu/dev/bin/python. But we don't need to be concerned about that -- we're not going to be using 2to3, idle, pip, etc. If we zipped up the environment, we could move this onto another machine.
 
-We're very close to our Uber Python jar -- now with a zipped Conda directory in mind, let's proceed.
 
 2.2. zip the file
 
 ```
 zip -r env.zip dev
 ```
+env.zip will be used when submit PySpark jobs.
+
 
 # Submit Spark Job to PAI examples
 
 1. Spark job
 
+The spark-submit script in Spark’s bin directory is used to launch applications on a cluster. It can use all of Spark’s supported cluster managers through a uniform interface so you don’t have to configure your application especially for each one.
+
+The cmb below could submit java or scala Spark jobs to PAI.
+
+cmd:
 ```
 export HADOOP_CONF_DIR=/pai/pai-management/bootstrap/hadoop-service/hadoop-configuration
 ./bin/spark-submit  --class org.apache.spark.examples.SparkPi  --master yarn  --deploy-mode cluster  /spark-2.3.0-bin-hadoop2.7/examples/jars/spark-examples_2.11-2.3.0.jar 10
 ```
 
+Other config or commands, you could refer:
+[Spark Job Submition](https://spark.apache.org/docs/latest/submitting-applications.html)
+
+
 2. PySpark job
+
+Spark also provides a Python API [PySpark](https://spark.apache.org/docs/latest/api/python/index.html)
+
+If we want to submit a MMLSpark to PAI, add python dependency at submit cmd "--archives env.zip --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=envnew.zip/bin/python"
+
+cmd:
 
 ```
 export HADOOP_CONF_DIR=/hadoop-service/hadoop-configuration
@@ -128,9 +148,15 @@ export HADOOP_CONF_DIR=/hadoop-service/hadoop-configuration
 
 3. MMLSpark job
 
+[MMLSpark](https://github.com/Azure/mmlspark) provides a number of deep learning and data science tools for Apache Spark.
+
+If we want to submit a MMLSpark to PAI, add dependency at submit cmd "--packages Azure:mmlspark:0.12"
+
+cmd:
+
 ``` 
 export HADOOP_CONF_DIR=/pai/pai-management/bootstrap/hadoop-service/hadoop-configuration
- ./bin/spark-submit --packages Azure:mmlspark:0.12 --master yarn --deploy-mode cluster  --archives env.zip --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=envnew.zip/bin/python Income.py
+ ./bin/spark-submit --packages Azure:mmlspark:0.12 --master yarn --deploy-mode cluster  --archives env.zip --conf spark.yarn.appMasterEnv.PYSPARK_PYTHON=envnew.zip/bin/python TestMMLSpark.py
 ```
 
 
