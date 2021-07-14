@@ -75,7 +75,6 @@ class AlertManager(object):
             token_configured = False
 
         result["alert-handler"]["configured"] = True
-        result["actions-available"] = ["fix-nvidia-gpu-low-perf"]
         if email_configured and token_configured:
             result["actions-available"].extend(["email-admin", "email-user", "stop-jobs", "tag-jobs"])
         elif email_configured:
@@ -89,6 +88,12 @@ class AlertManager(object):
             result["cluster-utilization"]["configured"] = True
         else:
             result["cluster-utilization"]["configured"] = False
+
+        if result.get("job-status-change-notification") is not None and \
+            result["job-status-change-notification"].get("enable"):
+            result["job-status-change-notification"]["configured"] = True
+        else:
+            result["job-status-change-notification"]["configured"] = False
 
         result["host"] = self.get_master_ip()
         result["url"] = "http://{0}:{1}".format(self.get_master_ip(), result["port"])

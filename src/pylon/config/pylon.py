@@ -36,11 +36,15 @@ class Pylon:
         machine_list = self.cluster_configuration['machine-list']
         master_ip = [host['hostip'] for host in machine_list if host.get('pai-master') == 'true'][0]
         port = self.service_configuration['port']
+        sslConfig = {'port': 443}
+        if 'ssl' in self.service_configuration:
+            sslConfig.update(self.service_configuration['ssl'])
+
         uri = 'http://{0}:{1}'.format(master_ip, port)
-        uriHttps = 'https://{0}'.format(master_ip)
+        uriHttps = 'https://{0}:{1}'.format(master_ip, sslConfig['port'])
         if 'domain' in self.service_configuration:
             uri = 'http://{0}:{1}'.format(self.service_configuration['domain'], port)
-            uriHttps = 'https://{0}'.format(self.service_configuration['domain'])
+            uriHttps = 'https://{0}:{1}'.format(self.service_configuration['domain'], sslConfig['port'])
 
         webhdfs_legacy_port = self.service_configuration['webhdfs-legacy-port']
         ret = {
@@ -50,7 +54,7 @@ class Pylon:
             'webhdfs-legacy-port': webhdfs_legacy_port,
         }
         if 'ssl' in self.service_configuration:
-            ret['ssl'] = self.service_configuration['ssl']
+            ret['ssl'] = sslConfig
 
         return ret
 

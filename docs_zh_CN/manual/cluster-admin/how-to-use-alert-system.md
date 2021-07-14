@@ -42,7 +42,7 @@ prometheus:
     - name: customized-alerts
       rules:
         - alert: PAIJobGpuPercentLowerThan0_3For1h
-          expr: avg(task_gpu_percent{virtual_cluster=~"default"}) by (job_name) < 0.3
+          expr: avg(task_gpu_percent{virtual_cluster=~"default"}) by (job_name, username) < 0.3
           for: 1h
           labels:
             severity: warn
@@ -91,13 +91,13 @@ alert-manager:
         alertname: PAIJobGpuPercentLowerThan0_3For1h
   customized-receivers:
   - name: "pai-email-admin-user-and-stop-job"
-    actions: 
+    actions:
       email-admin:
-      email-user:  
+      email-user:
         template: 'kill-low-efficiency-job-alert'
       stop-jobs:
       tag-jobs:
-        tags: 
+        tags:
         - 'stopped-by-alert-manager'
 
 ```
@@ -120,12 +120,12 @@ alert-manager:
 | stop-jobs    | -             | 需要             |
 | tag-jobs     | -             | 需要             |
 
-另外，一些处理措施还依赖在报警实例（alert instance）的`labels`中包含特定的字段。这些`labels`是根据报警规则中的expression来生成的。例如，上述`PAIJobGpuPercentLowerThan0_3For1h·`报警的expression是`avg(task_gpu_percent{virtual_cluster=~"default"}) by (job_name) < 0.3`。这个expression会返回一个列表，列表中每个元素都有一个`job_name`字段。 `stop-jobs`这个处理措施就依赖`job_name`字段，它会根据`job_name`字段去结束对应的任务。当报警信息处于触发状态（firing）时，您可以访问`http(s)://<your master IP>/prometheus/alerts`页面，在这个页面上可以看到对应报警有哪些`labels`。各个预定义处理措施和字段的依赖关系请参考下表：
+另外，一些处理措施还依赖在报警实例（alert instance）的`labels`中包含特定的字段。这些`labels`是根据报警规则中的expression来生成的。例如，上述`PAIJobGpuPercentLowerThan0_3For1h·`报警的expression是`avg(task_gpu_percent{virtual_cluster=~"default"}) by (job_name, username) < 0.3`。这个expression会返回一个列表，列表中每个元素都有一个`job_name`字段和一个`username`字段。 `stop-jobs`这个处理措施就依赖`job_name`字段，它会根据`job_name`字段去结束对应的任务。当报警信息处于触发状态（firing）时，您可以访问`http(s)://<your master IP>/prometheus/alerts`页面，在这个页面上可以看到对应报警有哪些`labels`。各个预定义处理措施和字段的依赖关系请参考下表：
 
 |              | 在`labels`中依赖的字段 |
 | :-----------:| :------------------: |
 | cordon-nodes | node_name            |
-| email-admin  | -                    | 
+| email-admin  | -                    |
 | email-user   | -                    |
 | stop-jobs    | job_name             |
 | tag-jobs     | job_name             |
@@ -145,13 +145,13 @@ alert-manager:
         alertname: PAIJobGpuPercentLowerThan0_3For1h
   customized-receivers:
   - name: "pai-email-admin-user-and-stop-job"
-    actions: 
+    actions:
       email-admin:
-      email-user:  
+      email-user:
         template: 'kill-low-efficiency-job-alert'
       stop-jobs:
       tag-jobs:
-        tags: 
+        tags:
         - 'stopped-by-alert-manager'
   ......
 ```
@@ -246,7 +246,7 @@ alert-manager:
 `pai-bearer-token`和`cluster-utilization`->`schedule`是此功能的必要字段。
 有关`schedule`字段的语法，请参阅[定时计划语法](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax)。
 例如，`"0 0 * * *"`表示每日在UTC 00:00发送报告。
-同时请确保已启用[`email-admin`]（#Existing-Actions-and-Matching-Rules）处理措施。 
+同时请确保已启用[`email-admin`]（#Existing-Actions-and-Matching-Rules）处理措施。
 
 ```yaml
 alert-manager:
@@ -254,6 +254,32 @@ alert-manager:
   cluster-utilization: # cluster-utilization is a k8s CronJob which reports the GPU utilization of the cluster
     # for schedule syntax, refer to https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax
     schedule: "0 0 * * *" # daily report at UTC 00:00
+```
+
+为使配置生效，请在dev box容器中使用以下命令重启`alert-manager`服务：
+
+```bash
+./paictl.py service stop -n alert-manager
+./paictl.py config push -p /cluster-configuration -m service
+./paictl.py service start -n alert-manager
+```
+
+## Cluster k8s cert expiration checker
+
+我们提供了定期检查k8s证书过期时间，并将快到期提醒发送给管理员用户的功能。
+
+您可以通过在 `services-configuration.yml` 中配置 `alert-manager`->`cert-expiration-checker`, `schedule`, `alert-residual-days` 和 `cert-path` 来管理这个功能。
+有关 `schedule` 字段的语法，请参阅[定时计划语法](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax)。
+例如，`"0 0 * * *"`表示每日在UTC 00:00发送报告。
+在启用了 [`email-admin`]（#Existing-Actions-and-Matching-Rules）处理措施之后，将会给管理员发送邮件提醒。
+
+```yaml
+alert-manager:
+  cert-expiration-checker: # cert-expiration-checker is a k8s CronJob which check the cert expiration date
+    # for schedule syntax, refer to https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax
+    schedule: '0 0 * * *' # daily check at UTC 00:00
+    alert-residual-days: 30 # send alert if the expiration date is coming soon
+    cert-path: '/etc/kubernetes/ssl' # the k8s cert path in master node
 ```
 
 为使配置生效，请在dev box容器中使用以下命令重启`alert-manager`服务：

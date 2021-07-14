@@ -63,10 +63,6 @@ jobs:
       run: |
         cd src/job-exporter/test
         python -m unittest discover .
-    - name: Test yarn exporter
-      run: |
-        cd src/yarn-exporter/test
-        python -m unittest discover .
 
   watchdog:
     name: Test watchdog on go-${{ matrix.go }}-${{ matrix.os }}
@@ -182,11 +178,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node }}
-    - name: Test contrib/submit-simple-job
-      run: |
-        cd contrib/submit-simple-job
-        npm install
-        npm test
     - name: Test contrib/submit-job-v2
       run: |
         cd contrib/submit-job-v2
